@@ -1,0 +1,60 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: yba-mgr-provider-create
+spec:
+  template:
+    spec:
+      serviceAccountName: yb-kubeconfig-puller
+      initContainers:
+      - name: yb-config-generator
+        image: <yourrepo>/yba-k8s-manager-cfgbuilder
+        env:
+         - name: YDB_NS_BASENAME
+           value: "yb-test"
+         - name: YDB_REGION
+           value: "us-east"
+         - name: YDB_STORAGECLASS
+           value: "yugabyte"
+         - name: YDB_AZ_1
+           value: "us-east1-b"
+         - name: YDB_AZ_2
+           value: "us-east1-c"
+         - name: YDB_AZ_3
+           value: "us-east1-d"
+         - name: YDB_PULLSECRET
+           value: "/tmp/demo/k8s-pull-secret.yml"
+         - name: YDB_K8S_SERVER
+           value: "<K8S SERVER ADDRESS>"
+         - name: YDB_TOLERATION_1
+           value: "testkey1;Equal;testvalue1;NoSchedule"
+        volumeMounts:
+        - mountPath: /tmp/yb-configs
+          name: yb-configs
+      containers:
+      - name: yw-client
+        image: <yourrepo>/yugaware-client
+        env:
+         - name: "YW_HOSTNAME"
+           value: "<PLATFORM IP>"
+         - name: "YW_API_TOKEN"
+           value: "<API TOKEN>"
+        volumeMounts:
+        - mountPath: /tmp/yb-configs
+          name: yb-configs
+        - mountPath: /tmp/demo
+          name: pullsecret
+        args:
+         - "provider"
+         - "create"
+         - "kubernetes_provider"
+         - "-f"
+         - "/tmp/yb-configs/provider_template.yaml"
+      restartPolicy: OnFailure
+      volumes:
+      - name: yb-configs
+        emptyDir: {}
+      - name: pullsecret
+        secret:
+          secretName: ycspull
+          optional: false
