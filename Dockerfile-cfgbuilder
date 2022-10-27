@@ -1,0 +1,27 @@
+FROM bitnami/kubectl:1.24.6 as kubectl
+
+WORKDIR /app
+
+COPY --chown=1001:1001 config-generator.sh .
+
+USER root
+
+RUN chmod 755 config-generator.sh
+
+FROM alpine
+
+RUN apk add --no-cache bash
+
+WORKDIR /app
+
+COPY --from=kubectl /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/
+
+COPY --from=kubectl /app/config-generator.sh .
+
+USER 1001
+
+RUN mkdir /tmp/yb-configs
+
+VOLUME /tmp/yb-configs
+
+ENTRYPOINT ["/app/config-generator.sh"]
