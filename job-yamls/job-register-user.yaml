@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: yba-mgr-register-user
+spec:
+  template:
+    spec:
+      containers:
+      - name: yw-client
+        image: <yourrepo>/yugaware-client
+        env:
+         - name: "YW_HOSTNAME"
+           value: "<PLATFORM IP>"
+         - name: "YW_ENVIRONMENT"
+           value: "DEV"
+         - name: "YW_FULL_NAME"
+           value: "Yugabyte Admin User"
+         - name: "YW_EMAIL"
+           value: "test@test.com"
+         - name: "YW_PASSWORD"
+           valueFrom:
+             secretKeyRef:
+               name: yw-pltf-pass
+               key: pw
+               optional: false
+         - name: "YW_GENERATE_API_TOKEN"
+           value: "true"
+        args:
+         - "register"
+      restartPolicy: OnFailure

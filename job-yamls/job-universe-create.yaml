@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: yba-mgr-universe-create
+spec:
+  template:
+    spec:
+      containers:
+      - name: yw-client
+        image: <yourrepo>/yugaware-client
+        env:
+         - name: "YW_HOSTNAME"
+           value: "<PLATFORM IP>"
+         - name: "YDB_UNIVERSE_NAME"
+           value: "demo"
+         - name: "YDB_NS_BASENAME"
+           value: "yb-test"
+         - name: "YDB_REGION"
+           value: "us-east"
+         - name: "YW_API_TOKEN"
+           value: "<API TOKEN>
+         - name: "YW_INSTANCE_TYPE"
+           value: "xsmall"
+        args:
+         - universe
+         - create
+         - $(YDB_UNIVERSE_NAME)
+         - --provider
+         - $(YDB_NS_BASENAME)
+         -  --regions
+         - $(YDB_REGION)
+         - --wait
+      restartPolicy: OnFailure
