@@ -17,6 +17,7 @@ There are two Docker images used by the Kubernetes yamls: `yba-k8s-manager-cfgbu
 Build the images and push them to the registry of choice, then substitute the parameter in the k8s yaml files.
 ```
 docker build -t <yourrepo>/yba-k8s-manager-cfgbuilder -f Dockerfile-cfgbuilder
+git clone https://github.com/yugabyte/yb-tools.git
 docker build -t <yourrepo>/yugaware-client -f Dockerfile-ywclient
 ```
 
@@ -46,7 +47,7 @@ kubectl apply -f job-yamls/job-register-user.yaml
 
 #### Prerequisites script
 
-Edit the required variables in the `yba_provider_prereqs` script and run it (or supply in the container, if dockerized). *Please note: when dockerized, kubeconfig would need to be mounted to the container as a volume for it to function properly, as this script relies on `kubectl`.*
+Edit the required variables in the `yba_provider_prereqs` script and run it (or supply in the container, if dockerized). *Please note: when dockerized, kubeconfig would need to be mounted to the container as a volume for it to function properly, as this script relies on `kubectl`. Docker option would look as follows:`-v /path/to/your/kube/config:/.kube/config`*
 ```
 chmod +x yba_provider_prereqs.sh
 ./yba_provider_prereqs.sh
@@ -74,10 +75,6 @@ kubectl apply -f job-yamls/job-provider-create.yaml
 
 ##### Required variables - config generator container
 
-- `YW_HOSTNAME` :            Hostname/IP address of the Platform host;
-
-- `YW_API_TOKEN` :           API token that's been generated during the registration or through Platform UI;
-
 - `YDB_NS_BASENAME` :        Desired provider name. Will act as a base name for Universe namespace(s);
 
 - `YDB_REGION` :             Region to deploy your Universe to;
@@ -99,17 +96,14 @@ env:
 
 ##### Optional variables – config generator container
 
-- `REGISTRY` :               Address of a private container registry to pull the Yugabyte Anywhere image from. Defaults to `quay.io/yugabyte/yugabyte`;
 
-- `BASEDIR` :                Directory in the container for the provider template and ns kubeconfigs. Defaults to `/tmp/yb-configs`;
+- `YDB_REGISTRY` :           Address of a private container registry to pull the Yugabyte Anywhere image from. Defaults to `quay.io/yugabyte/yugabyte`;
 
-- TODO SERVER address
+- `YDB_K8S_SERVER` :         Server address of the Kubernetes cluster. This must be set or `yb_kubeconfig_puller` SA needs to have `get,list` permissions on `services` in `kube-system` namespace to obtain it.
 
-- TODO CLUSTER Name
+- `YDB_KUBECONFIG` :         Path to a Kubeconfig file for the provider configuration. *Note: in current version of toolkit this kubeconfig, even if supplied, is overridden by per-zone kubeconfigs;*
 
-- `YDB_KUBECONFIG`
-
-- `YDB_PULLSECRET` :         Path to a Pull Secret file for accessing the Yugabyte Anywhere repo / private registry;
+- `YDB_PULLSECRET` :         Path to a Pull Secret file for accessing the Yugabyte Anywhere repo / private registry. Don't set if a pull secret is not required;
 
 - `YDB_TOLERATION_[x]` :     Description of a k8s taint toleration(s) to apply to your Universe's pods. Tolerations format: `key;operator;value;effect` . Naming convention same as in AZs.\
 Example:
@@ -126,6 +120,12 @@ env:
  - name: YDB_NODESELECT_1
    value: "cloud.google.com/gke-nodepool;yugabyte"
 ```
+
+##### Required variables -  `yugaware-client` container
+
+- `YW_HOSTNAME` :            Hostname/IP address of the Platform host;
+
+- `YW_API_TOKEN` :           API token that's been generated during the registration or through Platform UI;
 
 ### Creating a Universe
 
